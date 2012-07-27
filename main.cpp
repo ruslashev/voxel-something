@@ -59,10 +59,6 @@ int main()
 void loadEverythingButOGL()
 {
 	loadModel("model.vx", width, height, depth);
-
-	voxel* voxels = new voxel[width*height*depth];
-
-	buildModel(voxels);
 	
 	vertices.reserve(width*height*depth);
 	for (int x = 0; x < width; x++)
@@ -80,6 +76,53 @@ void loadEverythingButOGL()
 	}
 }
 
+void loadModel(string filename, int& w, int& h, int& d)
+{
+	ifstream fs(filename.c_str());
+	if (!fs.is_open()) { cout << "'ders no file called \"" << filename << "\" ya dumass\n"; exit(1); }
+		
+	string line;
+	
+	while (getline(fs, line))
+	{
+		if (line.substr(0, 4) == "size")
+		{
+			string vals = line.substr(line.find("[")+1);
+			istringstream s(vals.erase(vals.size()-1, vals.size()));
+			s >> w;
+			s >> h;
+			s >> d;
+			
+			voxels = new voxel[w*h*d];
+		} else if (line.substr(0, 3) == "vox")
+		{
+			string vals = line.substr(line.find("[")+1);
+			istringstream s(vals.erase(vals.size()-1, vals.size()));
+			int x, y, z, r, g, b;
+			s >> x;
+			s >> y;
+			s >> z;
+			s >> r;
+			s >> g;
+			s >> b;
+			
+			int i = x * h * d + y * d + z;
+			voxels[i].empty = false;
+			voxels[i].r = r;
+			voxels[i].g = g;
+			voxels[i].b = b;
+		} else { /* everything else is not parsed */ }
+	}
+	fs.close();
+}
+
+/*
+void pushVoxel(vector<vertex>& vertices, float x, float y, float z, voxel& v)
+{
+	if (v.empty) return;
+	vertices.push_back(vertex(x, y, z, v.r, v.g, v.b));
+}
+*/
 void loadGL()
 {
 	glfwInit();
@@ -123,59 +166,6 @@ void loadGL()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 }
-
-GLenum buildModel(voxel* voxels)
-{
-	for (int x = 0; x < width; x++)
-	{
-		for (int y = 0; y < height; y++)
-		{
-			for (int z = 0; z < depth; z++)
-			{				
-				int i = x * height * depth + y * depth + z;
-				
-				voxels[i].empty = false;
-				voxels[i].r = 200;
-				voxels[i].g = 200;
-				voxels[i].b = 200;
-			}
-		}
-	}
-	
-	return GL_NO_ERROR;
-}
-
-void loadModel(string filename, int& w, int& h, int& d)
-{
-	ifstream fs(filename.c_str());
-	if (!fs.good()) { cout << "'ders no file called \"" << filename << "\" ya dumass\n"; exit(1); }
-	
-	string line;
-	
-	while (getline(fs, line))
-	{
-		if (line.substr(0, 4) == "size")
-		{
-			stringstream s; s << line.substr(line.find("[")+1).substr(0, line.size()-4);
-			string val;
-			while (s.good())
-			{
-				s >> val;
-				cout << val << endl;
-			}
-			//cout << s.str();
-		} else { /* everything else is not parsed */ }
-	}
-	fs.close();
-}
-
-/*
-void pushVoxel(vector<vertex>& vertices, float x, float y, float z, voxel& v)
-{
-	if (v.empty) return;
-	vertices.push_back(vertex(x, y, z, v.r, v.g, v.b));
-}
-*/
 
 void loadShader(GLenum type, GLuint& shader, const char* source)
 {

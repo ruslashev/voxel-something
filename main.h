@@ -26,7 +26,6 @@ struct voxel
 	int b;
 };
 
-GLenum buildModel(voxel* voxels);
 //void pushVoxel(std::vector<vertex>& vertices, float x, float y, float z, voxel& v);
 void loadShader(GLenum type, GLuint& shader, const char* source);
 

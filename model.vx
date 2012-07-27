@@ -1,5 +1,15 @@
-pure awesome model
+pure awesome model format
 
-size [1 5 10]
+size [3 3 1]
 
-vox [0, 0, 0, 255, 0, 0]
+vox [0 0 0 255 0 0]
+vox [0 1 0 0 255 0]
+vox [0 2 0 0 0 255]
+
+vox [1 0 0 0 255 0]
+vox [1 1 0 0 0 255]
+vox [1 2 0 255 0 0]
+
+vox [2 0 0 0 0 255]
+vox [2 1 0 255 0 0]
+vox [2 2 0 0 255 0]
