@@ -1,4 +1,1 @@
-voxel-something
-===============
-
-Just playing around with OpenGL
+like seriously guys, nothing special to see here
