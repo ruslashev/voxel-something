@@ -94,6 +94,22 @@ void loadModel(string filename, int& w, int& h, int& d)
 			s >> d;
 			
 			voxels = new voxel[w*h*d];
+			for (int x = 0; x < w; x++)
+			{
+				for (int y = 0; y < h; y++)
+				{
+					for (int z = 0; z < d; z++)
+					{
+						int i = x * h * d + y * d + z;
+						cout << i << " ";
+						
+						voxels[i].empty = true;
+						voxels[i].r = 0;
+						voxels[i].g = 0;
+						voxels[i].b = 0;
+					}
+				}
+			}
 		} else if (line.substr(0, 3) == "vox")
 		{
 			string vals = line.substr(line.find("[")+1);
