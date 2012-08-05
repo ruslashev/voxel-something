@@ -4,7 +4,7 @@ function love.load()
 	
 	image = love.graphics.newImage(love.image.newImageData(1, 1))
 	
-	mapsize = { w = 11, h = 11, d = 40 }
+	mapsize = { w = 4, h = 10, d = 20 }
 	mapx = 390
 	mapy = 370
 	
@@ -19,7 +19,7 @@ function love.load()
 	selection = {x = math.floor(mapsize.w/2+0.5), y = math.floor(mapsize.h/2+0.5), z = 1}
 	currcolor = {r = 255, g = 0, b = 0}
 	
-	tileLayerOnTheBottom = false
+	tileLayerOnTheBottom = true
 	
 	map = {}
 	for x = 1, mapsize.w do
@@ -61,8 +61,8 @@ function love.load()
 	]])
 	hue, sat, val = 0, 1, 1
 	valBar:send("sat", sat)
-	
-	exportBtnCol = 150
+
+	keys = {}
 end
 
 function love.update(dt)
@@ -79,12 +79,6 @@ function love.update(dt)
 	if msx >= 70 and msx <= 85 and msy >= 20 and msy <= 140 and love.mouse.isDown("l") then
 		val = 1-((msy-20)) / 120
 	end
-	if msx >= love.graphics.getWidth()-100 and msx <= love.graphics.getWidth()-20 and msy >= 20 and msy <= 40 then
-		exportBtnCol = 180
-		if love.mouse.isDown("l") then
-			export()
-		end
-	else exportBtnCol = 150 end
 end
 
 function love.draw()
@@ -113,10 +107,10 @@ function love.draw()
 	currcolor.b = b
 	love.graphics.rectangle("fill", 95, 40, 84, 15)
 	
-	love.graphics.setColor(exportBtnCol, exportBtnCol, exportBtnCol)
-	love.graphics.rectangle("fill", love.graphics.getWidth()-100, 20, 80, 20)
-	love.graphics.setColor(255, 255, 255)
-	love.graphics.printf("Export", love.graphics.getWidth()-100, 23, 80, "center")
+	-- love.graphics.setColor(exportBtnCol, exportBtnCol, exportBtnCol)
+	-- love.graphics.rectangle("fill", love.graphics.getWidth()-100, 20, 80, 20)
+	-- love.graphics.setColor(255, 255, 255)
+	-- love.graphics.printf("Export", love.graphics.getWidth()-100, 23, 80, "center")
 	
 	for x = 1, mapsize.w do
 		for y = 1, mapsize.h do
@@ -126,6 +120,12 @@ function love.draw()
 					local tx, ty = (tilewidth/2)*(y-x), (tileheight/2)*(y+x)-z*tiledepth
 					--love.graphics.rectangle("fill", tx+mapx, ty+mapy, 2, 2)
 					love.graphics.draw(tileImg, tx+mapx, ty+mapy)
+					
+					local ts = 5
+					local sx, sy, sz = mapsize.w - x, mapsize.h - y, mapsize.d - z
+					love.graphics.rectangle("fill", sx*ts+200, sy*ts+20-ts, ts, ts)
+					love.graphics.rectangle("fill", sx*ts+220+mapsize.d*ts, sz*ts+20-ts, ts, ts)
+					love.graphics.rectangle("fill", sy*ts+350+mapsize.w*ts, sz*ts+20-ts, ts, ts)
 				end
 			end
 		end
@@ -158,30 +158,50 @@ end
 function love.keypressed(key)
 	if key == "escape" then love.event.push("quit") end
 	
-	keyUp = love.keyboard.isDown("w")
-	keyDown = love.keyboard.isDown("s")
-	keyLeft = love.keyboard.isDown("a")
-	keyRight = love.keyboard.isDown("d")
-	keyTop = love.keyboard.isDown("up")
-	keyBottom = love.keyboard.isDown("down")
-	keyAction = love.keyboard.isDown(" ")
-	keyClear = love.keyboard.isDown("return")
+	keys = {
+		up = love.keyboard.isDown("w"),
+		down = love.keyboard.isDown("s"),
+		left = love.keyboard.isDown("a"),
+		right = love.keyboard.isDown("d"),
+		top = love.keyboard.isDown("o"),
+		bottom = love.keyboard.isDown("l"),
+		action = love.keyboard.isDown(" "),
+		export = love.keyboard.isDown("return"),
+		clear = love.keyboard.isDown("k"),
+		
+		xscaleDown = love.keyboard.isDown("up"),
+		xscaleUp = love.keyboard.isDown("down"),
+		yscaleDown = love.keyboard.isDown("left"),
+		yscaleUp = love.keyboard.isDown("right")
+	}
 	
-	if keyUp then
+	if keys.up then
 		selection.x = selection.x-1
-	elseif keyDown then
+	elseif keys.down then
 		selection.x = selection.x+1
-	elseif keyLeft then
+	elseif keys.left then
 		selection.y = selection.y-1
-	elseif keyRight then
+	elseif keys.right then
 		selection.y = selection.y+1
-	elseif keyBottom then
+	elseif keys.bottom then
 		selection.z = selection.z-1
-	elseif keyTop then
+	elseif keys.top then
 		selection.z = selection.z+1
 	end
 	
-	if keyAction then
+	if keys.xscaleDown then
+		mapsize.w = mapsize.w-1
+	elseif keys.xscaleUp then
+		mapsize.w = mapsize.w+1
+		reinitmap()
+	elseif keys.yscaleDown then
+		mapsize.h = mapsize.h-1
+	elseif keys.yscaleUp then
+		mapsize.h = mapsize.h+1
+		reinitmap()
+	end
+	
+	if keys.action then
 		if selection.x >= 1 and selection.x <= mapsize.w and selection.y >= 1 and selection.y <= mapsize.h and selection.z >= 1 and selection.z <= mapsize.d then
 			map[selection.x][selection.y][selection.z].empty = false
 			map[selection.x][selection.y][selection.z].r = currcolor.r
@@ -189,11 +209,13 @@ function love.keypressed(key)
 			map[selection.x][selection.y][selection.z].b = currcolor.b
 		end
 	end
-	if keyClear then
+	if keys.clear then
 		if selection.x >= 1 and selection.x <= mapsize.w and selection.y >= 1 and selection.y <= mapsize.h and selection.z >= 1 and selection.z <= mapsize.d then
 			map[selection.x][selection.y][selection.z].empty = not map[selection.x][selection.y][selection.z].empty
 		end
 	end
+	
+	if keys.export then export() end
 end
 
 function export()
@@ -202,9 +224,9 @@ function export()
 	file:open("w")
 	text = note .. "\n\nsize [" .. mapsize.w .. " " .. mapsize.h .. " " .. mapsize.d .. "]\n\n"
 
-	for x = 0, mapsize.w-1 do
-		for y = 0, mapsize.h-1 do
 			for z = 0, mapsize.d-1 do
+		for y = 0, mapsize.h-1 do
+	for x = 0, mapsize.w-1 do
 				if not map[x+1][y+1][z+1].empty then text = text.."vox ["..x.." "..y.." "..z.." "..map[x+1][y+1][z+1].r.." "..map[x+1][y+1][z+1].g.." "..map[x+1][y+1][z+1].b.."]\n" end
 			end
 		end
