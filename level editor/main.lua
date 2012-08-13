@@ -4,7 +4,7 @@ function love.load()
 	
 	image = love.graphics.newImage(love.image.newImageData(1, 1))
 	
-	mapsize = { w = 4, h = 10, d = 20 }
+	mapsize = { w = 1, h = 20, d = 50 }
 	mapx = 390
 	mapy = 370
 	
@@ -224,9 +224,9 @@ function export()
 	file:open("w")
 	text = note .. "\n\nsize [" .. mapsize.w .. " " .. mapsize.h .. " " .. mapsize.d .. "]\n\n"
 
-			for z = 0, mapsize.d-1 do
-		for y = 0, mapsize.h-1 do
 	for x = 0, mapsize.w-1 do
+		for y = 0, mapsize.h-1 do
+			for z = 0, mapsize.d-1 do
 				if not map[x+1][y+1][z+1].empty then text = text.."vox ["..x.." "..y.." "..z.." "..map[x+1][y+1][z+1].r.." "..map[x+1][y+1][z+1].g.." "..map[x+1][y+1][z+1].b.."]\n" end
 			end
 		end

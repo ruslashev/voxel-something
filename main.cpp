@@ -12,28 +12,32 @@ int main()
 	loadGL();
 
 	glm::mat4 model;
-	glm::mat4 view = glm::lookAt(glm::vec3(0., 20., 40.), glm::vec3(0., 0., 0.), glm::vec3(0., 1., 0.));
+	glm::mat4 view = glm::lookAt(glm::vec3(0, 20, 40), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	glm::mat4 projection = glm::perspective(60.0f, 800.0f / 600.0f, 1.0f, 100.0f);
 	glm::mat4 mvp;
 	GLint mvpUniform = glGetUniformLocation(shaderProgram, "mvp");
 	
 	// From awesome tutorial at http://gafferongames.com/game-physics/fix-your-timestep/
 	double time = 0.0;
-	const double dt = 0.01;
+	const double constdt = 0.01;
 	double oldTime = glfwGetTime();
-	double accumulator = 0.0;
+	double dt = 0.0;
+	
+	bool pause = false;
 	
 	while (glfwGetWindowParam(GLFW_OPENED) && glfwGetKey(GLFW_KEY_ESC) != GLFW_PRESS)
-	{		
+	{
+		if (glfwGetKey(GLFW_KEY_SPACE) == GLFW_PRESS) { pause = false; }
+		
 		double newTime = glfwGetTime();
 		double frameTime = newTime - oldTime;
 		frameTime = min(frameTime, 0.25); // max frame time to avoid spiral of death
 		oldTime = newTime;
-		accumulator += frameTime;
+		dt += frameTime;
 		
-		while (accumulator >= dt)
+		while (dt >= constdt && !pause)
 		{
-			// update
+			// update (time, dt)
 			{
 				int x, y;
 				glfwGetMousePos(&x, &y);
@@ -50,15 +54,15 @@ int main()
 				glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
 			}
 			
-			time += dt;
-			accumulator -= dt;
+			time += constdt;
+			dt -= constdt;
 		}
 		
 		// draw
 		{
 			glClearColor(0.1f, 0.1f, 0.1f, 1.f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				
+			
 			glDrawArrays(GL_QUADS, 0, vertices.size());
 			glfwSwapBuffers();
 		}
@@ -148,7 +152,7 @@ void loadModel(string filename, int& w, int& h, int& d)
 void pushVoxel(vector<vertex>& vertices, float x, float y, float z, float r, float g, float b)
 {
 	float s = 1.f;
-	/*
+/*
 	y
 	^  __________
 	| /         /|
@@ -160,7 +164,7 @@ void pushVoxel(vector<vertex>& vertices, float x, float y, float z, float r, flo
 	| first   | /
 	|         |/
   --+----------------> x
--z /   */
+-z /                                   */
 	vertices.push_back(vertex(x*s,   y*s+s, z*s,   r, g, b));
 	vertices.push_back(vertex(x*s,   y*s,   z*s,   r, g, b));
 	vertices.push_back(vertex(x*s+s, y*s,   z*s,   r, g, b));
@@ -212,7 +216,7 @@ void loadGL()
 	
 	glEnable(GL_DEPTH_TEST);
 	//glEnable(GL_CULL_FACE);
-
+	
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 	glGenBuffers(1, &vbo);
