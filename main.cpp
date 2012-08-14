@@ -127,18 +127,24 @@ void loadModel(string filename, int& w, int& h, int& d)
 				}
 			}
 		} else if (line.substr(0, 3) == "vox")
-		{
+		{			
 			string vals = line.substr(line.find("[")+1);
 			istringstream s(vals.erase(vals.size()-1, vals.size()));
 			int x, y, z;
+			int rgbhex;
 			float r, g, b;
 			s >> x;
 			s >> y;
 			s >> z;
-			s >> r;
-			s >> g;
-			s >> b;
-						
+			s >> hex >> rgbhex;
+			
+			// RRGGBB
+			// each hex digit takes 4 bits (1111_2 -> F_16), so shifting by 16 bits would leave 0xRR from 0xRRGGBB
+			// for green we shift by 8 bits (0xRRGGBB -> 0xRRGG) and bitmasking it to 0xGG
+			r = (rgbhex >> 16) & 0xFF;
+			g = (rgbhex >> 8) & 0xFF;
+			b = rgbhex & 0xFF;
+			
 			int i = x * h * d + y * d + z;
 			voxels[i].empty = false;
 			voxels[i].r = r / 255.0f;

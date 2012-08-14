@@ -4,7 +4,7 @@ function love.load()
 	
 	image = love.graphics.newImage(love.image.newImageData(1, 1))
 	
-	mapsize = { w = 1, h = 20, d = 50 }
+	mapsize = { w = 11, h = 11, d = 21 }
 	mapx = 390
 	mapy = 370
 	
@@ -28,8 +28,8 @@ function love.load()
 			map[x][y] = {}
 			for z = 1, mapsize.d do
 				if z == 1 and tileLayerOnTheBottom then
-					map[x][y][z] = { empty = false, r = 130, g = 230, b = 80 }
-					--map[x][y][z] = { empty = false, r = 255, g = 255, b = 255 }
+					--map[x][y][z] = { empty = false, r = 130, g = 230, b = 80 }
+					map[x][y][z] = { empty = false, r = 255, g = 255, b = 255 }
 				else
 					map[x][y][z] = { empty = true, r = 255, g = 0, b = 255 }
 				end
@@ -227,7 +227,15 @@ function export()
 	for x = 0, mapsize.w-1 do
 		for y = 0, mapsize.h-1 do
 			for z = 0, mapsize.d-1 do
-				if not map[x+1][y+1][z+1].empty then text = text.."vox ["..x.." "..y.." "..z.." "..map[x+1][y+1][z+1].r.." "..map[x+1][y+1][z+1].g.." "..map[x+1][y+1][z+1].b.."]\n" end
+				local r = string.format("%X", map[x+1][y+1][z+1].r)
+				local g = string.format("%X", map[x+1][y+1][z+1].g)
+				local b = string.format("%X", map[x+1][y+1][z+1].b)
+				
+				if #r == 1 then r = r..r end
+				if #g == 1 then g = b..g end
+				if #b == 1 then b = b..b end
+				
+				if not map[x+1][y+1][z+1].empty then text = text.."vox ["..x.." "..y.." "..z.." "..r..g..b.."]\n" end
 			end
 		end
 	end
