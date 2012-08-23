@@ -4,7 +4,7 @@ function love.load()
 	
 	image = love.graphics.newImage(love.image.newImageData(1, 1))
 	
-	mapsize = { w = 11, h = 11, d = 21 }
+	mapsize = { w = 11, h = 11, d = 11 }
 	mapx = 390
 	mapy = 370
 	
@@ -27,12 +27,14 @@ function love.load()
 		for y = 1, mapsize.h do
 			map[x][y] = {}
 			for z = 1, mapsize.d do
-				if z == 1 and tileLayerOnTheBottom then
-					--map[x][y][z] = { empty = false, r = 130, g = 230, b = 80 }
-					map[x][y][z] = { empty = false, r = 255, g = 255, b = 255 }
-				else
-					map[x][y][z] = { empty = true, r = 255, g = 0, b = 255 }
-				end
+				-- if z == 1 and tileLayerOnTheBottom then
+					-- -- map[x][y][z] = { empty = false, r = 130, g = 230, b = 80 }
+					-- map[x][y][z] = { empty = false, r = 255, g = 255, b = 255 }
+				-- else
+					-- map[x][y][z] = { empty = true, r = 255, g = 0, b = 255 }
+				-- end
+				local r, g, b = HSV((x*255)/mapsize.w, (y*255)/mapsize.h, (z*255)/mapsize.d)
+				map[x][y][z] = { empty = false, r = r, g = g, b = b }
 			end
 		end
 	end
@@ -232,10 +234,11 @@ function export()
 				local b = string.format("%X", map[x+1][y+1][z+1].b)
 				
 				if #r == 1 then r = r..r end
-				if #g == 1 then g = b..g end
+				if #g == 1 then g = g..g end
 				if #b == 1 then b = b..b end
 				
-				if not map[x+1][y+1][z+1].empty then text = text.."vox ["..x.." "..y.." "..z.." "..r..g..b.."]\n" end
+				text = text .. r .. "\n"
+				--if not map[x+1][y+1][z+1].empty then text = text.."vox ["..x.." "..y.." "..z.." "..r..g..b.."]\n" end
 			end
 		end
 	end
