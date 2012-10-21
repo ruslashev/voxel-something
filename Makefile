@@ -1,6 +1,6 @@
-compiler_options = -Wall -I"C:/MinGW/include"
+compiler_options = -Wall
 
-libraries = -lmingw32 -lglfw -lopengl32 -lglew32
+libraries = -lglfw -lGL -lGLEW
 source_files = main.cpp
 
 exec_name = voxelsomething
