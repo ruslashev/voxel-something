@@ -9,7 +9,7 @@ vector<vertex> vertices;
 int main()
 {
 	loadModel("model.vx", width, height, depth);
-	
+
 	vertices.reserve(width*height*depth);
 	for (int x = 0; x < width; x++)
 	{
@@ -113,59 +113,84 @@ int main()
 	return 0;
 }
 
-void loadModel(string filename, int& w, int& h, int& d)
+bool loadModel(string filename, int& w, int& h, int& d)
 {
 	ifstream fs(filename.c_str());
 	if (!fs.is_open()) { cout << "Failed to open model file \"" << filename << "\". It probably doesn't exist\n"; exit(1); }
-		
 	string line;
-	
-	while (getline(fs, line))
+	getline(fs, line);
+
+	if (line.substr(0, 4) == "size")
 	{
-		if (line.substr(0, 4) == "size")
+		string vals = line.substr(5);
+		istringstream s(vals);
+		int size, w, h, d;
+		// AABBCC
+		s >> hex >> size;
+		w = (size >> 16) & 0xFF;
+		h = (size >> 8) & 0xFF;
+		d = size & 0xFF;
+
+		voxels = new voxel[w*h*d];
+		for (int x = 0; x < w; x++)
 		{
-			string vals = line.substr(line.find("[")+1);
-			istringstream s(vals.erase(vals.size()-1, vals.size()));
-			s >> w;
-			s >> h;
-			s >> d;
-			
-			voxels = new voxel[w*h*d];
-			// create a new empty model
-			for (int x = 0; x < w; x++)
+			for (int y = 0; y < h; y++)
 			{
-				for (int y = 0; y < h; y++)
+				for (int z = 0; z < d; z++)
 				{
-					for (int z = 0; z < d; z++)
-					{
-						int i = x * h * d + y * d + z;
-						
-						voxels[i].empty = true;
-						voxels[i].color = glm::vec3(0);
-					}
+					int i = x * h * d + y * d + z;
+					
+					voxels[i].empty = true;
+					voxels[i].color = glm::vec3(0);
 				}
 			}
-		} else if (line.substr(0, 3) == "vox")
-		{			
-			string vals = line.substr(line.find("[")+1);
-			istringstream s(vals.erase(vals.size()-1, vals.size()));
-			int x, y, z;
-			int rgbhex;
-			s >> x;
-			s >> y;
-			s >> z;
-			s >> hex >> rgbhex;
-			
-			// to future myself learning about bitmasking:
-			// RRGGBB
-			// each hex digit takes 4 bits (1111_2 -> F_16), so shifting by 16 bits would leave 0xRR from 0xRRGGBB
-			// for green we shift by 8 bits (0xRRGGBB -> 0xRRGG) and bitmasking it to 0xGG
-			int i = x * h * d + y * d + z;
-			voxels[i].empty = false;
-			voxels[i].color = glm::vec3(((rgbhex >> 16) & 0xFF) / 255.f, ((rgbhex >> 8) & 0xFF) / 255.f, (rgbhex & 0xFF) / 255.f);
-		} else { /* everything else is not parsed */ }
+		}
+	} else {
+		cout << "Error parsing model \"" << filename << "\"" << endl;
+		cleanup();
+		exit(1);
 	}
+
+	bool everythingPastThisLineIsData = false;
+
+	while (getline(fs, line))
+	{
+		if (line.substr(0, 4) == "data")
+		{
+			everythingPastThisLineIsData = true;
+		} else if (line.substr(0, 4) == "data" && everythingPastThisLineIsData)
+		{
+			cout << "Error parsing model \"" << filename << "\"" << endl;
+			cleanup();
+			exit(1);
+		} else if (everythingPastThisLineIsData) {
+			istringstream s(line);
+			string data;
+			s >> data;
+
+			stringstream ss;
+			int r, g, b;
+			ss << hex << data.substr(9, 2);
+			ss >> r;
+			ss.str(string());
+			ss.clear();
+			ss << hex << data.substr(11, 2);
+			ss >> g;
+			ss.str(string());
+			ss.clear();
+			ss << hex << data.substr(13);
+			ss >> b;
+			ss.str(string());
+			ss.clear();
+
+			int i = atoi(data.substr(0, 3).c_str()) * h * d + atoi(data.substr(3, 3).c_str()) * d + atoi(data.substr(6, 3).c_str());
+			voxels[i].empty = false;
+			voxels[i].color = glm::vec3(r, g, b);
+		}
+	}
+	
 	fs.close();
+	return true;
 }
 
 void loadGL()

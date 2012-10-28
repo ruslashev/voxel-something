@@ -26,7 +26,6 @@ struct voxel
 	glm::vec3 color;
 };
 
-void pushVoxel(std::vector<vertex>& vertices, glm::vec3 position, glm::vec3 color);
 void loadShader(GLenum type, GLuint& shader, const char* filename);
 
 GLuint vao, vbo, vertexShader, fragmentShader, shaderProgram;
@@ -35,7 +34,7 @@ int msx = 0, msy = 0;
 
 void loadEverythingButOGL();
 void loadGL();
-void loadModel(std::string filename, int& w, int& h, int& d);
+bool loadModel(std::string filename, int& w, int& h, int& d);
 
 void cleanup()
 {
