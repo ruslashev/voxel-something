@@ -8,7 +8,12 @@ vector<vertex> vertices;
 
 int main()
 {
-	loadModel("model.vx", width, height, depth);
+	if (!loadModel("model.vx", width, height, depth))
+	{
+		cout << "Error parsing model \"model.vx\"" << endl;
+		cleanup();
+		exit(1);
+	}
 
 	vertices.reserve(width*height*depth);
 	for (int x = 0; x < width; x++)
@@ -116,7 +121,7 @@ int main()
 bool loadModel(string filename, int& w, int& h, int& d)
 {
 	ifstream fs(filename.c_str());
-	if (!fs.is_open()) { cout << "Failed to open model file \"" << filename << "\". It probably doesn't exist\n"; exit(1); }
+	if (!fs.is_open()) { cout << "Failed to open model file \"" << filename << "\". It probably doesn't exist\n"; return false; }
 	string line;
 	getline(fs, line);
 
@@ -146,9 +151,7 @@ bool loadModel(string filename, int& w, int& h, int& d)
 			}
 		}
 	} else {
-		cout << "Error parsing model \"" << filename << "\"" << endl;
-		cleanup();
-		exit(1);
+		return false;
 	}
 
 	bool everythingPastThisLineIsData = false;
@@ -159,12 +162,9 @@ bool loadModel(string filename, int& w, int& h, int& d)
 		{
 			everythingPastThisLineIsData = true;
 		} else if (line.substr(0, 4) == "data" && everythingPastThisLineIsData)
-		{
-			cout << "Error parsing model \"" << filename << "\"" << endl;
-			cleanup();
-			exit(1);
+		{ return false;
 		} else if (everythingPastThisLineIsData) {
-			istringstream s(line);
+			istringstream s(line.substr());
 			string data;
 			s >> data;
 
@@ -172,23 +172,19 @@ bool loadModel(string filename, int& w, int& h, int& d)
 			int r, g, b;
 			ss << hex << data.substr(9, 2);
 			ss >> r;
-			ss.str(string());
-			ss.clear();
+			ss.str(string()); ss.clear();
 			ss << hex << data.substr(11, 2);
 			ss >> g;
-			ss.str(string());
-			ss.clear();
+			ss.str(string()); ss.clear();
 			ss << hex << data.substr(13);
 			ss >> b;
-			ss.str(string());
-			ss.clear();
 
 			int i = atoi(data.substr(0, 3).c_str()) * h * d + atoi(data.substr(3, 3).c_str()) * d + atoi(data.substr(6, 3).c_str());
 			voxels[i].empty = false;
 			voxels[i].color = glm::vec3(r, g, b);
 		}
 	}
-	
+
 	fs.close();
 	return true;
 }
