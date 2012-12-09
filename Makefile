@@ -1,14 +1,14 @@
 compiler_options = -Wall
-
 libraries = -lglfw -lGL -lGLEW
-source_files = main.cpp
-
 exec_name = voxelsomething
+
+objs = main.o
 
 default: all
 
-all:
-	g++ $(compiler_options) -o $(exec_name) $(source_files) $(libraries)
+all: $(objs)
+	g++ $(compiler_options) -o $(exec_name) $(objs) $(libraries)
+	echo $(exec_name)
 
 clean:
-	-rm -f $(exec_name)
+	-rm -f $(objs) $(exec_name)

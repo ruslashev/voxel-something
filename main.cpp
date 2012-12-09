@@ -2,64 +2,17 @@
 
 using namespace std;
 
-int width = 16, height = 16, depth = 16;
-voxel* voxels = NULL;
-vector<vertex> vertices;
-
 int main()
 {
-	if (!loadModel("model.vx", width, height, depth))
-	{
-		cout << "Error parsing model \"model.vx\"" << endl;
-		cleanup();
-		exit(1);
-	}
+	atexit(cleanup);
 
-	vertices.reserve(width*height*depth);
-	for (int x = 0; x < width; x++)
-	{
-		for (int y = 0; y < height; y++)
-		{
-			for (int z = 0; z < depth; z++)
-			{
-				voxel v = voxels[x * height * depth + y * depth + z];
-				if (v.empty) continue;
-				float s = 1.f;
-				glm::vec3 color = v.color;
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s+s, z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s,   z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s,   z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s+s, z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s+s, z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s,   z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s,   z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s+s, z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s+s, z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s+s, z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s,   z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s,   z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s+s, z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s+s, z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s,   z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s,   z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s,   z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s,   z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s,   z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s,   z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s+s, z*s-s), color));
-				vertices.push_back(vertex(glm::vec3(x*s,   y*s+s, z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s+s, z*s  ), color));
-				vertices.push_back(vertex(glm::vec3(x*s+s, y*s+s, z*s-s), color));
-			}
-		}
-	}
+	mesh testMesh("model.vx");
 
 	loadGL();
 
-
 	glm::mat4 model;
 	glm::mat4 view = glm::lookAt(glm::vec3(0, 20, 40), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	glm::mat4 projection = glm::perspective(60.0f, 800.0f / 600.0f, 1.0f, 100.0f);
+	glm::mat4 projection = glm::perspective(60.0f, (float)wind_width / wind_height, 1.0f, 100.0f);
 	glm::mat4 mvp;
 	GLint mvpUniform = glGetUniformLocation(shaderProgram, "mvp");
 	
@@ -90,10 +43,9 @@ int main()
 				if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) { rotz += x - msx; rotz += y - msy; }
 				msx = x; msy = y;
 				
-				model = glm::rotate(glm::mat4(1.f), rotx, glm::vec3(1, 0, 0));
-				model = glm::rotate(model, 			roty, glm::vec3(0, 1, 0));
-				model = glm::rotate(model, 			rotz, glm::vec3(0, 0, 1));
-				model = glm::translate(model, glm::vec3(-width/2.f, -height/2.f, -depth/2.f));
+				model = glm::rotate(glm::mat4(1), rotx, glm::vec3(1, 0, 0));
+				model = glm::rotate(model,        roty, glm::vec3(0, 1, 0));
+				model = glm::rotate(model,        rotz, glm::vec3(0, 0, 1));
 				mvp = projection * view * model;
 				
 				glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
@@ -108,133 +60,91 @@ int main()
 			glClearColor(0.1f, 0.1f, 0.1f, 1.f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			
-			glDrawArrays(GL_QUADS, 0, vertices.size());
+			testMesh.draw(GL_QUADS);
+
 			glfwSwapBuffers();
 		}
 	}
-	
-	cleanup();
-		
+			
 	return 0;
 }
 
-bool loadModel(string filename, int& w, int& h, int& d)
+bool mesh::loadModel(string filename)
 {
+	/*
 	ifstream fs(filename.c_str());
-	if (!fs.is_open()) { cout << "Failed to open model file \"" << filename << "\". It probably doesn't exist\n"; return false; }
+	if (!fs.good()) { cout << "Failed to open model file \"" << filename << "\""; return false; }
+	
 	string line;
 	getline(fs, line);
+	string vals = line.substr(5);
+	istringstream s(vals);
+	//int w, h, d;
+	// AABBCC
+	s >> w >> h >> d;
 
-	if (line.substr(0, 4) == "size")
+	voxels = new voxel[w*h*d];
+	for (int x = 0; x < w; x++)
 	{
-		string vals = line.substr(5);
-		istringstream s(vals);
-		int size, w, h, d;
-		// AABBCC
-		s >> hex >> size;
-		w = (size >> 16) & 0xFF;
-		h = (size >> 8) & 0xFF;
-		d = size & 0xFF;
-
-		voxels = new voxel[w*h*d];
-		for (int x = 0; x < w; x++)
+		for (int y = 0; y < h; y++)
 		{
-			for (int y = 0; y < h; y++)
+			for (int z = 0; z < d; z++)
 			{
-				for (int z = 0; z < d; z++)
-				{
-					int i = x * h * d + y * d + z;
-					
-					voxels[i].empty = true;
-					voxels[i].color = glm::vec3(0);
-				}
+				int i = x * h * d + y * d + z;
+				
+				voxels[i].empty = true;
+				voxels[i].color = glm::vec3(0);
 			}
 		}
-	} else {
-		return false;
 	}
 
-	bool everythingPastThisLineIsData = false;
+	voxels[1 * h * d + 0 * d + 0].empty = false;
+	voxels[1 * h * d + 0 * d + 0].color = glm::vec3(1);
 
-	while (getline(fs, line))
-	{
-		if (line.substr(0, 4) == "data")
-		{
-			everythingPastThisLineIsData = true;
-		} else if (line.substr(0, 4) == "data" && everythingPastThisLineIsData)
-		{ return false;
-		} else if (everythingPastThisLineIsData) {
-			istringstream s(line.substr());
-			string data;
-			s >> data;
+	voxels[0 * h * d + 1 * d + 0].empty = false;
+	voxels[0 * h * d + 1 * d + 0].color = glm::vec3(1);
 
-			stringstream ss;
-			int r, g, b;
-			ss << hex << data.substr(9, 2);
-			ss >> r;
-			ss.str(string()); ss.clear();
-			ss << hex << data.substr(11, 2);
-			ss >> g;
-			ss.str(string()); ss.clear();
-			ss << hex << data.substr(13);
-			ss >> b;
-
-			int i = atoi(data.substr(0, 3).c_str()) * h * d + atoi(data.substr(3, 3).c_str()) * d + atoi(data.substr(6, 3).c_str());
-			voxels[i].empty = false;
-			voxels[i].color = glm::vec3(r, g, b);
-		}
-	}
+	voxels[0 * h * d + 0 * d + 1].empty = false;
+	voxels[0 * h * d + 0 * d + 1].color = glm::vec3(1);
 
 	fs.close();
+	return true;
+	*/
+	cout << "LOADING FILE " << filename << " LOL" << endl;
 	return true;
 }
 
 void loadGL()
 {
-	if (glfwInit() == GL_FALSE) { cerr << "GLFW failed to initialize\n"; cleanup(); exit(1); }
+	if (!glfwInit()) { cerr << "GLFW failed to initialize\n"; exit(1); }
 	glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 2); glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 1); glfwOpenWindowHint(GLFW_WINDOW_NO_RESIZE, GL_TRUE);
-	//glfwOpenWindowHint(GLFW_FSAA_SAMPLES, 16); // in case of bragging on the Internet uncomment this line
-	if (glfwOpenWindow(800, 600, 0, 0, 0, 0, 24, 8, GLFW_WINDOW) == GL_FALSE) { cerr << "Failed to open window\n"; cleanup(); exit(1); }
-	glfwSetWindowTitle("Voxel something");
+	glfwOpenWindowHint(GLFW_FSAA_SAMPLES, 4); // in case of bragging on the Internet uncomment this line
+	if (!glfwOpenWindow(wind_width, wind_height, 0, 0, 0, 0, 24, 8, GLFW_WINDOW)) { cerr << "Failed to open window\n"; exit(1); }
+	glfwSetWindowTitle("voxel something");
 	
 	GLenum glewInitStatus = glewInit();
-	if (glewInitStatus != GLEW_OK) { cerr << "GLEW failed to initialize. Error string:\n" << glewGetErrorString(glewInitStatus) << endl; cleanup(); exit(1); }
+	if (glewInitStatus != GLEW_OK) { cerr << "GLEW failed to initialize. Error string:\n" << glewGetErrorString(glewInitStatus) << endl; exit(1); }
 	
-	glViewport(0, 0, 800, 600);
+	glViewport(0, 0, wind_width, wind_height);
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	glGenBuffers(1, &vbo);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertex), vertices.data(), GL_STATIC_DRAW);
 	
 	loadShader(GL_VERTEX_SHADER, vertexShader, "shaders/vert.glsl");
 	loadShader(GL_FRAGMENT_SHADER, fragmentShader, "shaders/frag.glsl");
-	
 	shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-	glUseProgram(shaderProgram);
-	
-	GLint posAttrib = glGetAttribLocation(shaderProgram, "vposition");
-	GLint colAttrib = glGetAttribLocation(shaderProgram, "vcolor");
-
-	glEnableVertexAttribArray(colAttrib);
+	glAttachShader(shaderProgram, vertexShader); glAttachShader(shaderProgram, fragmentShader);
+	glLinkProgram(shaderProgram); glUseProgram(shaderProgram);
+	posAttrib = glGetAttribLocation(shaderProgram, "vposition");
+	normAttrib = glGetAttribLocation(shaderProgram, "vnormal");
 	glEnableVertexAttribArray(posAttrib);
-	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
-	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(sizeof(glm::vec3)));
+	glEnableVertexAttribArray(normAttrib);
 }
-
 
 void loadShader(GLenum type, GLuint& shader, const char* filename)
 {
 	char compileLog[513];
 	ifstream fileStream (filename);
 	if (!fileStream)
-	{ cerr << "Error loading file \"" << filename << "\". It probably doesn't exist\n"; cleanup(); exit(1); }
+	{ cerr << "Error loading file \"" << filename << "\". It probably doesn't exist\n"; exit(1); }
 	stringstream ss;
 	ss << fileStream.rdbuf();
 	fileStream.close();
@@ -248,5 +158,5 @@ void loadShader(GLenum type, GLuint& shader, const char* filename)
 	
 	GLint compileSuccess;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileSuccess);
-	if (compileSuccess == GL_FALSE) { glGetShaderInfoLog(shader, 512, NULL, compileLog); cerr << "Shader \"" << filename << "\" failed to compile. Error log:\n" << compileLog; glDeleteShader(shader); cleanup(); exit(1); }
+	if (compileSuccess == GL_FALSE) { glGetShaderInfoLog(shader, 512, NULL, compileLog); cerr << "Shader \"" << filename << "\" failed to compile. Error log:\n" << compileLog; glDeleteShader(shader); exit(1); }
 }
