@@ -10,5 +10,9 @@ all: $(objs)
 	g++ $(compiler_options) -o $(exec_name) $(objs) $(libraries)
 	echo $(exec_name)
 
+debug: $(objs)
+	g++ $(compiler_options) -g -O0 -o $(exec_name) $(objs) $(libraries)
+	echo $(exec_name)
+
 clean:
 	-rm -f $(objs) $(exec_name)

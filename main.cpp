@@ -4,16 +4,14 @@ using namespace std;
 
 int main()
 {
-	atexit(cleanup);
-
-	mesh testMesh("model.vx");
-
 	loadGL();
 
-	glm::mat4 model;
-	glm::mat4 view = glm::lookAt(glm::vec3(0, 20, 40), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	glm::mat4 projection = glm::perspective(60.0f, (float)wind_width / wind_height, 1.0f, 100.0f);
-	glm::mat4 mvp;
+	mesh testMesh("model.svx");
+	
+	atexit(cleanup);
+
+	glm::mat4 model, view, mvp;
+	glm::mat4 projection = glm::perspective(60.0f, (float)wind_width/(float)wind_height, 0.1f, 100.0f);
 	GLint mvpUniform = glGetUniformLocation(shaderProgram, "mvp");
 	
 	double time = 0.0;
@@ -21,19 +19,15 @@ int main()
 	double oldTime = glfwGetTime();
 	double dt = 0.0;
 	
-	bool pause = false;
-	
 	while (glfwGetWindowParam(GLFW_OPENED) && !glfwGetKey(GLFW_KEY_ESC) && !((glfwGetKey(GLFW_KEY_LCTRL) || glfwGetKey(GLFW_KEY_RCTRL)) && (glfwGetKey('C') || glfwGetKey('W') || glfwGetKey('D'))))
 	{
-		if (glfwGetKey(GLFW_KEY_SPACE) == GLFW_PRESS) { pause = false; }
-		
 		double newTime = glfwGetTime();
 		double frameTime = newTime - oldTime;
 		frameTime = min(frameTime, 0.25); // max frame time to avoid spiral of death
 		oldTime = newTime;
 		dt += frameTime;
 		
-		while (dt >= constdt && !pause)
+		while (dt >= constdt)
 		{
 			// update (time, dt)
 			{
@@ -46,6 +40,8 @@ int main()
 				model = glm::rotate(glm::mat4(1), rotx, glm::vec3(1, 0, 0));
 				model = glm::rotate(model,        roty, glm::vec3(0, 1, 0));
 				model = glm::rotate(model,        rotz, glm::vec3(0, 0, 1));
+				view = glm::lookAt(glm::vec3(0, 0, 4-glfwGetMouseWheel()), glm::vec3(0), glm::vec3(0, 1, 0));
+
 				mvp = projection * view * model;
 				
 				glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, glm::value_ptr(mvp));
@@ -60,83 +56,65 @@ int main()
 			glClearColor(0.1f, 0.1f, 0.1f, 1.f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			
-			testMesh.draw(GL_QUADS);
+			testMesh.draw(GL_POINTS);
 
 			glfwSwapBuffers();
 		}
 	}
-			
+	
 	return 0;
 }
 
-bool mesh::loadModel(string filename)
+bool mesh::loadVoxels(string filename)
 {
-	/*
-	ifstream fs(filename.c_str());
-	if (!fs.good()) { cout << "Failed to open model file \"" << filename << "\""; return false; }
+	ifstream filestream(filename.c_str(), ios::binary);
+	if (!filestream.good()) { return false; }
 	
-	string line;
-	getline(fs, line);
-	string vals = line.substr(5);
-	istringstream s(vals);
-	//int w, h, d;
-	// AABBCC
-	s >> w >> h >> d;
-
-	voxels = new voxel[w*h*d];
-	for (int x = 0; x < w; x++)
+	SHTVXL::header header;
+	filestream.read((char*)&header, sizeof(header));
+	
+	if (strncmp(header.magic, "SHTVXL", 6) || header.version != 1)
 	{
-		for (int y = 0; y < h; y++)
-		{
-			for (int z = 0; z < d; z++)
-			{
-				int i = x * h * d + y * d + z;
-				
-				voxels[i].empty = true;
-				voxels[i].color = glm::vec3(0);
-			}
-		}
+		cout << "File \"" << filename << "\" is not a valid version 1 SHTVXL model" << endl;
+		filestream.close(); return false;
 	}
-
-	voxels[1 * h * d + 0 * d + 0].empty = false;
-	voxels[1 * h * d + 0 * d + 0].color = glm::vec3(1);
-
-	voxels[0 * h * d + 1 * d + 0].empty = false;
-	voxels[0 * h * d + 1 * d + 0].color = glm::vec3(1);
-
-	voxels[0 * h * d + 0 * d + 1].empty = false;
-	voxels[0 * h * d + 0 * d + 1].color = glm::vec3(1);
-
-	fs.close();
+	
+	filestream.close();
 	return true;
-	*/
-	cout << "LOADING FILE " << filename << " LOL" << endl;
-	return true;
+}
+
+void mesh::processVoxels()
+{
+	vertices.push_back(glm::vec4(1, 0, 0, 1));
+	vertices.push_back(glm::vec4(0, 1, 0, 1));
+	vertices.push_back(glm::vec4(0, 0, 1, 1));
 }
 
 void loadGL()
 {
-	if (!glfwInit()) { cerr << "GLFW failed to initialize\n"; exit(1); }
+	if (!glfwInit()) { cerr << "Failed to initialize GLFW\n"; exit(1); }
 	glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 2); glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 1); glfwOpenWindowHint(GLFW_WINDOW_NO_RESIZE, GL_TRUE);
 	glfwOpenWindowHint(GLFW_FSAA_SAMPLES, 4); // in case of bragging on the Internet uncomment this line
 	if (!glfwOpenWindow(wind_width, wind_height, 0, 0, 0, 0, 24, 8, GLFW_WINDOW)) { cerr << "Failed to open window\n"; exit(1); }
 	glfwSetWindowTitle("voxel something");
+	glfwSwapInterval(1);
 	
 	GLenum glewInitStatus = glewInit();
 	if (glewInitStatus != GLEW_OK) { cerr << "GLEW failed to initialize. Error string:\n" << glewGetErrorString(glewInitStatus) << endl; exit(1); }
 	
 	glViewport(0, 0, wind_width, wind_height);
 	glEnable(GL_DEPTH_TEST);
+	glPointSize(5.0f);
 	
 	loadShader(GL_VERTEX_SHADER, vertexShader, "shaders/vert.glsl");
 	loadShader(GL_FRAGMENT_SHADER, fragmentShader, "shaders/frag.glsl");
 	shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader); glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram); glUseProgram(shaderProgram);
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+	glLinkProgram(shaderProgram);
+	glUseProgram(shaderProgram);
 	posAttrib = glGetAttribLocation(shaderProgram, "vposition");
 	normAttrib = glGetAttribLocation(shaderProgram, "vnormal");
-	glEnableVertexAttribArray(posAttrib);
-	glEnableVertexAttribArray(normAttrib);
 }
 
 void loadShader(GLenum type, GLuint& shader, const char* filename)

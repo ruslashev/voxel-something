@@ -1,12 +1,14 @@
 #ifndef main_hpp
 #define main_hpp
 
+const int wind_width = 800;
+const int wind_height = 600;
+
 #include <GL/glew.h>
 #include <GL/glfw.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/noise.hpp>
 #include <cstdio>
 #include <vector>
 #include <ctime>
@@ -16,15 +18,9 @@
 #include <iostream>
 #include <math.h>
 
-
 typedef unsigned char byte;
 typedef unsigned short ushort;
-typedef unsigned short word;
 typedef unsigned int uint;
-
-
-const int wind_width = 800;
-const int wind_height = 600;
 
 void loadShader(GLenum type, GLuint& shader, const char* filename);
 
@@ -40,6 +36,15 @@ struct voxel
 	glm::vec3 color;
 };
 
+namespace SHTVXL
+{
+	struct header
+	{
+		char magic[6];
+		byte version; 
+	};
+}
+
 class mesh
 {
 private:
@@ -51,11 +56,14 @@ public:
 	std::vector<glm::vec2> texCoords;
 
 	mesh(std::string filename) : vbo_vertices(0), vbo_normals(0), ibo_indices(0) {
-		if (!loadModel(filename))
+		if (!loadVoxels(filename))
 		{
-			std::cout << "Error loading file \"" << filename << "\"\n";
+			std::cerr << "Failed to load model \"" << filename << "\"\n";
 			exit(1);
 		}
+		processVoxels();
+		
+		upload();
 	}
 	~mesh()
 	{
@@ -64,7 +72,9 @@ public:
 		if (ibo_indices != 0) { glDeleteBuffers(1, &ibo_indices); }
 	}
 
-	bool loadModel(std::string filename);
+	bool loadVoxels(std::string filename);
+
+	void processVoxels();
 
 	void upload()
 	{
