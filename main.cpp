@@ -117,19 +117,21 @@ void loadGL()
 	normAttrib = glGetAttribLocation(shaderProgram, "vnormal");
 }
 
-void loadShader(GLenum type, GLuint& shader, const char* filename)
+void loadShader(GLenum type, GLuint& shader, string filename)
 {
 	char compileLog[513];
-	ifstream fileStream (filename);
-	if (!fileStream)
-	{ cerr << "Error loading file \"" << filename << "\". It probably doesn't exist\n"; exit(1); }
-	stringstream ss;
-	ss << fileStream.rdbuf();
-	fileStream.close();
+	ifstream filestream (filename.c_str());
+	if (!filestream.good()) { cerr << "Failed to open shader \"" << filename << "\"\n"; exit(1); }
 
-	string sourceS = ss.str();
-	const char* source = sourceS.c_str();
-		
+    string str;
+    filestream.seekg(0, ios::end);
+    str.resize(filestream.tellg());
+    filestream.seekg(0, ios::beg);
+    filestream.read(&str[0], str.size());
+	filestream.close();
+
+	const char* source = str.c_str();
+	
 	shader = glCreateShader(type);
 	glShaderSource(shader, 1, &source, NULL);
 	glCompileShader(shader);

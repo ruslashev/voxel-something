@@ -22,7 +22,7 @@ typedef unsigned char byte;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 
-void loadShader(GLenum type, GLuint& shader, const char* filename);
+void loadShader(GLenum type, GLuint& shader, std::string filename);
 
 GLuint vertexShader, fragmentShader, shaderProgram;
 GLint posAttrib, normAttrib;
